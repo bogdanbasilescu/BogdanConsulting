@@ -18,6 +18,7 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 
 
 public class RegisterActivity extends AppCompatActivity {
@@ -47,26 +48,26 @@ public class RegisterActivity extends AppCompatActivity {
                 Log.d(TAG, "onClick: attempting to register.");
 
                 //check for null valued EditText fields
-                if(!isEmpty(mEmail.getText().toString())
+                if (!isEmpty(mEmail.getText().toString())
                         && !isEmpty(mPassword.getText().toString())
-                        && !isEmpty(mConfirmPassword.getText().toString())){
+                        && !isEmpty(mConfirmPassword.getText().toString())) {
 
                     //check if user has a company email address
-                    if(isValidDomain(mEmail.getText().toString())){
+                    if (isValidDomain(mEmail.getText().toString())) {
 
                         //check if passwords match
-                        if(doStringsMatch(mPassword.getText().toString(), mConfirmPassword.getText().toString())){
+                        if (doStringsMatch(mPassword.getText().toString(), mConfirmPassword.getText().toString())) {
 
                             //Initiate registration task
                             registerNewEmail(mEmail.getText().toString(), mPassword.getText().toString());
-                        }else{
+                        } else {
                             Toast.makeText(RegisterActivity.this, "Passwords do not Match", Toast.LENGTH_SHORT).show();
                         }
-                    }else{
+                    } else {
                         Toast.makeText(RegisterActivity.this, "Please Register with Company Email", Toast.LENGTH_SHORT).show();
                     }
 
-                }else{
+                } else {
                     Toast.makeText(RegisterActivity.this, "You must fill out all the fields", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -76,12 +77,29 @@ public class RegisterActivity extends AppCompatActivity {
 
     }
 
+    private void sendVerificationEmail() {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+
+        user.sendEmailVerification()
+                .addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            Toast.makeText(RegisterActivity.this, "Sent Verification Email", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(RegisterActivity.this, "Couldn't Send Verification Email", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+    }
+
     /**
      * Register a new email and password to Firebase Authentication
+     *
      * @param email
      * @param password
      */
-    public void registerNewEmail(final String email, String password){
+    public void registerNewEmail(final String email, String password) {
 
         showDialog();
 
@@ -91,8 +109,10 @@ public class RegisterActivity extends AppCompatActivity {
                     public void onComplete(@NonNull Task<AuthResult> task) {
                         Log.d(TAG, "createUserWithEmail:onComplete:" + task.isSuccessful());
 
-                        if (task.isSuccessful()){
+                        if (task.isSuccessful()) {
                             Log.d(TAG, "onComplete: AuthState: " + FirebaseAuth.getInstance().getCurrentUser().getUid());
+
+                            sendVerificationEmail();
 
                             FirebaseAuth.getInstance().signOut();
 
@@ -112,10 +132,11 @@ public class RegisterActivity extends AppCompatActivity {
 
     /**
      * Returns True if the user's email contains '@gmail.com'
+     *
      * @param email
      * @return
      */
-    private boolean isValidDomain(String email){
+    private boolean isValidDomain(String email) {
         Log.d(TAG, "isValidDomain: verifying email has correct domain: " + email);
         String domain = email.substring(email.indexOf("@") + 1).toLowerCase();
         Log.d(TAG, "isValidDomain: users domain: " + domain);
@@ -125,45 +146,48 @@ public class RegisterActivity extends AppCompatActivity {
     /**
      * Redirects the user to the login screen
      */
-    private void redirectLoginScreen(){
+    private void redirectLoginScreen() {
         Log.d(TAG, "redirectLoginScreen: redirecting to login screen.");
 
         Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
     }
+
     /**
      * Return true if @param 's1' matches @param 's2'
+     *
      * @param s1
      * @param s2
      * @return
      */
-    private boolean doStringsMatch(String s1, String s2){
+    private boolean doStringsMatch(String s1, String s2) {
         return s1.equals(s2);
     }
 
     /**
      * Return true if the @param is null
+     *
      * @param string
      * @return
      */
-    private boolean isEmpty(String string){
+    private boolean isEmpty(String string) {
         return string.equals("");
     }
 
 
-    private void showDialog(){
+    private void showDialog() {
         mProgressBar.setVisibility(View.VISIBLE);
 
     }
 
-    private void hideDialog(){
-        if(mProgressBar.getVisibility() == View.VISIBLE){
+    private void hideDialog() {
+        if (mProgressBar.getVisibility() == View.VISIBLE) {
             mProgressBar.setVisibility(View.INVISIBLE);
         }
     }
 
-    private void hideSoftKeyboard(){
+    private void hideSoftKeyboard() {
         this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
     }
 
